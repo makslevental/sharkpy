@@ -1,3 +1,3 @@
 import sharkpy
 
-print(sharkpy.add(1, 2))
+print(sharkpy.ir.Dog().bark())

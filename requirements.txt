@@ -3,3 +3,4 @@ numpy
 ninja
 pybind11
 asttokens
+PyYAML
