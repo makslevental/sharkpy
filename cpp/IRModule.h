@@ -42,7 +42,7 @@ class PyValue;
 /// Template for a reference to a concrete type which captures a python
 /// reference to its underlying python object.
 template <typename T>
-class PyObjectRef {
+class PYBIND11_EXPORT PyObjectRef {
 public:
   PyObjectRef(T *referrent, pybind11::object object)
       : referrent(referrent), object(std::move(object)) {
@@ -99,7 +99,7 @@ private:
 /// Context. Pushing a Context will not modify the Location or InsertionPoint
 /// unless if they are from a different context, in which case, they are
 /// cleared.
-class PyThreadContextEntry {
+class PYBIND11_EXPORT PyThreadContextEntry {
 public:
   enum class FrameKind {
     Context,
@@ -155,7 +155,7 @@ private:
 
 /// Wrapper around MlirContext.
 using PyMlirContextRef = PyObjectRef<PyMlirContext>;
-class PyMlirContext {
+class PYBIND11_EXPORT PyMlirContext {
 public:
   PyMlirContext() = delete;
   PyMlirContext(const PyMlirContext &) = delete;
@@ -285,7 +285,7 @@ private:
 /// are only valid for the duration of a diagnostic callback and attempting
 /// to access them outside of that will raise an exception. This applies to
 /// nested diagnostics (in the notes) as well.
-class PyDiagnostic {
+class PYBIND11_EXPORT PyDiagnostic {
 public:
   PyDiagnostic(MlirDiagnostic diagnostic) : diagnostic(diagnostic) {}
   void invalidate();
@@ -325,7 +325,7 @@ private:
 /// The object may remain live from a Python perspective for an arbitrary time
 /// after detachment, but there is nothing the user can do with it (since there
 /// is no way to attach an existing handler object).
-class PyDiagnosticHandler {
+class PYBIND11_EXPORT PyDiagnosticHandler {
 public:
   PyDiagnosticHandler(MlirContext context, pybind11::object callback);
   ~PyDiagnosticHandler();
@@ -374,13 +374,15 @@ public:
   PyDialects(PyMlirContextRef contextRef)
       : BaseContextObject(std::move(contextRef)) {}
 
+  // TODO(max): is this needed?
+  //  MlirDialect getDialectForKey(const std::string &key, bool attrError) __attribute__((weak));
   MlirDialect getDialectForKey(const std::string &key, bool attrError);
 };
 
 /// User-level dialect object. For dialects that have a registered extension,
 /// this will be the base class of the extension dialect type. For un-extended,
 /// objects of this type will be returned directly.
-class PyDialect {
+class PYBIND11_EXPORT PyDialect {
 public:
   PyDialect(pybind11::object descriptor) : descriptor(std::move(descriptor)) {}
 
@@ -393,7 +395,7 @@ private:
 /// Wrapper around an MlirDialectRegistry.
 /// Upon construction, the Python wrapper takes ownership of the
 /// underlying MlirDialectRegistry.
-class PyDialectRegistry {
+class PYBIND11_EXPORT PyDialectRegistry {
 public:
   PyDialectRegistry() : registry(mlirDialectRegistryCreate()) {}
   PyDialectRegistry(MlirDialectRegistry registry) : registry(registry) {}
@@ -498,7 +500,7 @@ private:
 
 /// Base class for PyOperation and PyOpView which exposes the primary, user
 /// visible methods for manipulating it.
-class PyOperationBase {
+class PYBIND11_EXPORT PyOperationBase {
 public:
   virtual ~PyOperationBase() = default;
   /// Implements the bound 'print' method and helps with others.
@@ -665,7 +667,7 @@ private:
 /// Wrapper around an MlirRegion.
 /// Regions are managed completely by their containing operation. Unlike the
 /// C++ API, the python API does not support detached regions.
-class PyRegion {
+class PYBIND11_EXPORT PyRegion {
 public:
   PyRegion(PyOperationRef parentOperation, MlirRegion region)
       : parentOperation(std::move(parentOperation)), region(region) {
@@ -686,7 +688,7 @@ private:
 /// Wrapper around an MlirBlock.
 /// Blocks are managed completely by their containing operation. Unlike the
 /// C++ API, the python API does not support detached blocks.
-class PyBlock {
+class PYBIND11_EXPORT PyBlock {
 public:
   PyBlock(PyOperationRef parentOperation, MlirBlock block)
       : parentOperation(std::move(parentOperation)), block(block) {
@@ -707,7 +709,7 @@ private:
 /// Calls to insert() will insert a new operation before the
 /// reference operation. If the reference operation is null, then appends to
 /// the end of the block.
-class PyInsertionPoint {
+class PYBIND11_EXPORT PyInsertionPoint {
 public:
   /// Creates an insertion point positioned after the last operation in the
   /// block, but still inside the block.
@@ -836,7 +838,7 @@ private:
 /// Represents a Python MlirNamedAttr, carrying an optional owned name.
 /// TODO: Refactor this and the C-API to be based on an Identifier owned
 /// by the context so as to avoid ownership issues here.
-class PyNamedAttribute {
+class PYBIND11_EXPORT PyNamedAttribute {
 public:
   /// Constructs a PyNamedAttr that retains an owned name. This should be
   /// used in any code that originates an MlirNamedAttribute from a python
@@ -913,7 +915,7 @@ public:
 /// value. For block argument values, this is the operation that contains the
 /// block to which the value is an argument (blocks cannot be detached in Python
 /// bindings so such operation always exists).
-class PyValue {
+class PYBIND11_EXPORT PyValue {
 public:
   PyValue(PyOperationRef parentOperation, MlirValue value)
       : parentOperation(std::move(parentOperation)), value(value) {}
@@ -1006,7 +1008,7 @@ private:
 };
 
 /// Bindings for MLIR symbol tables.
-class PySymbolTable {
+class PYBIND11_EXPORT PySymbolTable {
 public:
   /// Constructs a symbol table for the given operation.
   explicit PySymbolTable(PyOperationBase &operation);

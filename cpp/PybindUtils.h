@@ -95,8 +95,6 @@ struct MlirDefaultingCaster {
   }
 };
 
-template <typename T>
-struct type_caster<llvm::Optional<T>> : optional_caster<llvm::Optional<T>> {};
 } // namespace detail
 } // namespace pybind11
 

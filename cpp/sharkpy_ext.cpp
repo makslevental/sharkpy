@@ -3,20 +3,24 @@
 #include "mlir/IR/MLIRContext.h"
 #include "mlir/IR/Verifier.h"
 
+#include "IRModule.h"
+#include "getenv.hpp"
+#include "mlir-c/IR.h"
+#include "mlir/Bindings/Python/PybindAdaptors.h"
+#include "mlir/CAPI/Wrap.h"
 #include "mlir/Conversion/Passes.h"
 #include "mlir/Pass/Pass.h"
 #include "mlir/Pass/PassManager.h"
+#include "mlir/Pass/PassOptions.h"
 #include "mlir/Transforms/Passes.h"
-#include "mlir-c/IR.h"
-#include "mlir/CAPI/Wrap.h"
-#include "IRModule.h"
+#include "llvm/Support/CommandLine.h"
 
 #include "mlir/Parser/Parser.h"
 #include "mlir/Support/FileUtilities.h"
 
-#include "mlir/Dialect/SCF/IR/SCF.h"
 #include "mlir/Dialect/Func/IR/FuncOps.h"
 #include "mlir/Dialect/Math/IR/Math.h"
+#include "mlir/Dialect/SCF/IR/SCF.h"
 
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/IR/Module.h"
@@ -43,32 +47,41 @@
 
 namespace py = pybind11;
 
-template<typename cMlirType, typename mlirType>
-inline mlirType &unwrap(cMlirType val) {
-    assert(val.ptr && "unexpected non-null");
-    return *(static_cast<mlirType *>(val.ptr));
+template <typename cMlir_t, typename Mlir_t>
+inline Mlir_t &unwrap(cMlir_t val) {
+  assert(val.ptr && "unexpected non-null");
+  return *(static_cast<Mlir_t *>(val.ptr));
 }
 
-template<typename cMlirType, typename mlirType>
-inline cMlirType wrap(mlirType &val) {
-    return {&val};
+template <typename Mlir_t, typename cMlir_t> inline cMlir_t wrap(Mlir_t &val) {
+  return {&val};
 }
 
-struct Dog {
-};
+#include <iostream>
 
 void init_sharkpy_ext(py::module &&m) {
-    using ret = py::return_value_policy;
-    using namespace pybind11::literals;
+  using ret = py::return_value_policy;
+  using namespace pybind11::literals;
 
-    py::object _context = (py::object) py::module_::import("mlir._mlir_libs._mlir.ir").attr("Context");
+  py::object base_context =
+      (py::object)py::module_::import("mlir._mlir_libs._mlir.ir")
+          .attr("_BaseContext");
 
-    py::class_<Dog>(m, "Dog", _context).def(py::init<>()).def("bark", [](const Dog &self) { return "bark"; });
+  mlir::python::adaptors::pure_subclass(m, "SharkBaseContext", base_context)
+      .def(
+          "get_dialect_namespace",
+          [](mlir::python::PyMlirContext &self, std::string &name) {
+            std::cerr << "is null " << mlirContextIsNull(self.get()) << "\n";
+            auto dialect = unwrap<MlirContext, mlir::MLIRContext>(self.get())
+                               .getLoadedDialect(name);
+            std::cerr << dialect->getNamespace().str() << "\n";
+            return hash_value(hash_value(dialect->getTypeID()));
+          },
+          py::arg("dialect_name"), "gets name space of dialect");
 }
 
-
 PYBIND11_MODULE(sharkpy_ext, m) {
-    m.doc() = "Python bindings to Shark";
-    m.def_submodule("ir");
-    init_sharkpy_ext(m.def_submodule("ir"));
+  m.doc() = "Python bindings to Shark";
+  m.def_submodule("ir");
+  init_sharkpy_ext(m.def_submodule("ir"));
 }
